@@ -1,0 +1,305 @@
+---
+title: "Predicting Client Subscription for Bank's Term Deposit"
+author: 'Evangeline Tan'
+output: 
+  html_document:
+    toc: true
+    theme: united
+---
+
+
+### Introduction
+
+With direct marketing campaigns of a Portuguese banking institution that were based on phone calls,  more than one contact to the same client were often required so as to check if clients would subscribe to the bank's term deposit.
+<p>
+The classification goal predicts if the client will subscribe (Y/N) to a term deposit (var y).
+
+Data: [Bank Marketing Data Set](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing)
+<br>
+
+
+
+### Import data and libraries
+```{r dataset, echo=TRUE, message=FALSE, warning=FALSE}
+setwd("D:/et4_e")
+
+#Import the bank marketing data
+bank=read.table("bank.csv",sep=";",header=TRUE)
+
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+
+#Convert from character to factor
+bank[sapply(bank, is.character)] <- lapply(bank[sapply(bank, is.character)], 
+                                           as.factor)
+dim(bank)
+```
+There are 4,521 total observations and 17 variables in the bank data. 
+
+In this following section, the data will be analyzed and interpreted using different models such as Decision Tree, Logistic Regression and Random Forest. A comparison of predictive performances for the models will also be explained.
+<br>
+<br>
+
+```{r remove na}
+# Remove unknown values
+bank1 = bank
+bank1[bank1=="unknown"] <- NA
+sum(is.na(bank1))
+bank1 <- na.omit(bank1)
+```
+Before starting with the analysis, unknown missing values in the data were removed as it would affect the output and its bias. 
+
+With the remaining 764 observations, there are certain patterns within the observed data. 
+
+Since variables such as duration are obvious that highly affect the subscription choice, the focus will be on finding patterns within the data’s less obvious variables. 
+
+Variables such as age, job, marital status, education level and the number of contacts with the client during the campaign are explored to see the effects on the term deposit subscription choice.
+
+
+---
+
+### Analysis of data with specific variables
+
+```{r ageplot}
+# Checking if there are patterns between variables that affects Yes & No
+
+ggplot(bank1, aes(x= age, fill = y))+ geom_boxplot(alpha = .3)+ggtitle("Age affecting subscription of term deposit")
+```
+
+Age is only slightly significant for affecting the predicted value.
+
+<br>
+
+```{r jobplot}
+ggplot(bank1, aes(x=job, fill=y)) + geom_bar()+ggtitle("Jobs affecting subscription of term deposit")
+```
+
+Jobs have a similar and even pattern between y, thus not a significant indicator.
+
+<br>
+
+```{r maritalplot}
+ggplot(bank1, aes(x= marital, fill = y))+ geom_bar()+ggtitle("Marital status affecting subscription of term deposit")
+```
+
+Insignificant difference in pattern between marital and y, not a significant indicator.
+
+<br>
+
+```{r eduplot}
+ggplot(bank1, aes(x=education, fill = y)) + geom_bar()+ggtitle("Education level affecting subscription of term deposit")
+```
+
+Education have a similar even pattern, not a significant indicator.
+
+<br>
+
+```{r durationplot}
+ggplot(bank1, aes(x= duration, fill = y))+ geom_density(alpha = 0.2)+ggtitle("Duration affecting subscription of term deposit")
+```
+
+Benchmarking Purpose: longer the call,  higher the chance of saying yes
+
+<br>
+
+```{r subscribedplot}
+ggplot(bank1, aes(x= campaign, fill = y)) +geom_bar() + xlim(0,20) + ggtitle("Subscribed term deposits by number of campaigns")
+```
+
+Significant result, since if a person says yes, then they will probably do it within first 4 campaigns.
+
+<br>
+
+#### Observations
+
+Analyzing variables such as job as an example, there is an almost similar pattern between age, marital status, education level and the number of contacts with the client during the campaigns and subscription choice. Hence, those variables are not significant enough to be an indicator. 
+
+However, we can notice some significant observations on campaigns where if an individual were to subscribe to the term deposit, it would likely happen within the first three campaigns. 
+
+Next, we will then observe if there are any interesting analysis interpretation using different classification algorithms.
+
+---
+
+### Hold-out Validation method
+
+```{r holdout, warning=FALSE}
+# Hold-out Validation method
+set.seed(123)
+library(caTools)
+
+sample = sample.split(bank1$y, SplitRatio = 0.7)
+train = subset(bank1, sample==T)
+test = subset(bank1, sample==F)
+
+print(dim(train)); print(dim(test))
+```
+
+
+Train set with 70% data (535 observations, 17 variables) 
+Test data with 30% data (229 observations, 17 variables).
+<br>
+
+```{}
+prop.table(table(train$y))
+prop.table(table(test$y))
+```
+
+We can observe that the obtained baseline accuracy is 77 percent.
+<br>
+
+---
+
+### Logistic Regression
+
+As a classification algorithm, the logistic regression will find the relationship between the variables and the probability of the particular result. (Agrawal, 2017)
+<br>
+```{r logreg}
+# Logistic Regression
+bank_glm = glm(y ~ . , family="binomial", data = train)
+summary(bank_glm)
+##contactunknown, month of july, duration, poutcomesuccess are the more significant variables.
+```
+
+We can see the few significant variables that affect our model: the outcome of the previous marketing campaign, the last contact duration and the last contact month of the year.
+<br>
+
+```{r logreg acc}
+# Predicting with trainset
+PredTrain = predict(bank_glm, data = train, type = "response")
+# Confusion matrix
+table(train$y, PredTrain >= 0.5)
+(390+62)/nrow(train)  #Accuracy - 84%
+
+
+# Predicting using testset
+PredTest = predict(bank_glm, newdata = test, type = "response")
+# Confusion matrix
+table(test$y, PredTest >= 0.5)
+(163+30)/nrow(test)  #Accuracy - 84%
+
+## Baseline accuracy with 77%, both training and test set has 84 percent. 
+## Overall, logistic regression model is better, and a good fit.
+```
+
+
+The training set’s confusion matrix shows that the model predicted 390 non-subscribers and 62 subscribers accurately but misclassified 25 non-subscribers as people who subscribed and 58 subscribers as a non-subscriber. 
+
+Using both the train and test sets, we can see that the logistic regression model would have an approximate accuracy of 84%.
+
+
+The baseline accuracy for the daya was 77%, while the accuracy for both training and test data is 84%. 
+
+
+Overall, the logistic regression model is more accurate than the baseline accuracy on both train and test datasets. Hence the model is a good fit.
+
+<br>
+
+---
+
+### Decision Tree (CART)
+
+CART (Classification & Regression Trees) is a Decision Tree Algorithm used for classification or regression predictive modelling analysis. (Brownlee, 2016)
+<br>
+```{r dectree,fig.width = 10, message=FALSE, warning=FALSE}
+# Decision Tree - CART
+set.seed(123)
+library(rpart)
+library(rpart.plot)
+tree1 <- rpart(y~., data = train, method = 'class')
+rpart.plot(tree1, extra = "auto")
+```
+
+From the top, the overall probability of subscribing to a term deposit is 22%. The node asks whether the outcome of the previous marketing campaign was a failure.
+
+If yes, then we would move leftwards to the second node where 86% had a failed outcome of the previous marketing campaign with 15% of subscribing probability. Then in that second node, we check if the last called duration was less than 635 seconds. 
+
+If it were more than 635, we would move rightwards to the third node, where 7% had a call for more than 635 seconds with a 63% probability of subscribing. 
+
+Then we check if the job fits decision tree criteria; if it does not, then the probability of subscribing is 33%. 
+
+We will then keep going on with the pattern to understand further and analyse which variable impacts the likelihood of subscribing to a term deposit.
+
+<br>
+```{r dectree acc}
+pred_new <-predict(tree1, test, type="class")
+table_1 <- table(test$y,pred_new)
+table_1
+
+accuracytest <- sum(diag(table_1))/sum(table_1)
+print(paste('Test Accuracy', accuracytest))
+```
+
+The model correctly predicted 155 non-subscribers and 26 subscribers. Also, the model misclassified 25 subscribers as non-subscribers and 23 non-subscribers as people who subscribed. 
+
+However, the test accuracy is still relatively high, at around 79%. 
+
+<br>
+```{r dectree acc tuned}
+accuracytuned <- function(tree1) {
+  pred_new <- predict(tree1, test, type = 'class')
+  table_1 <- table(test$y, pred_new)
+  accuracytest <- sum(diag(table_1)) / sum(table_1)
+  accuracytest
+}
+
+control <- rpart.control(minsplit = 4,
+                         minbucket = round(4/ 3),
+                         maxdepth = 9,
+                         cp = 0)
+tuned_mod <- rpart(y~., data = train, method = 'class', control = control)
+accuracytuned(tuned_mod)
+# Tuned parameters can lead to higher accuracy
+```
+
+It can also be further accurately tuned with adjustments to its parameters to get higher performance. 
+
+
+---
+
+### Random Forest
+
+```{r randomfor, message=FALSE, warning=FALSE}
+# Random Forest
+library(randomForest)
+set.seed(123)
+
+# making the models with 100 trees
+subscribed_rf <- randomForest(y~., data=train, importance=T, ntree=100)
+
+importance(subscribed_rf)
+varImpPlot(subscribed_rf)
+# Duration and month are important predictors on whether customers subscribe.
+```
+
+
+Running the equation above, the Random Forest model would show the significance of each predictor in the data affecting the subscription choice. The last contact duration is the most important predictor, followed by the last contact month of the year and the previous marketing campaign’s outcome.
+<br>
+
+
+```{r randomfor acc}
+newtest <- predict(subscribed_rf,test)
+error <- mean(newtest != test$y)
+print(paste('Accuracy',1-error))
+# The model is almost 84% accurate.
+```
+
+The accuracy of the Random Forest method would be as high as about 84%.
+
+
+---
+
+### Conclusion
+
+Comparing all the models, we can see that Logistic Regression has an accuracy of 84%, Decision Tree via CART with 79%, Random Forest Method with 84%. 
+
+Therefore, Logistic Regression and Random Forest would both be the ideal predictive model for classification. 
+
+Both ideal models have indicated the same few variables that are significant and will impact the prediction of subscription for a term deposit: the last contact duration, outcome of the previous marketing campaign and the last contact month of the year. 
+
+<hr>
+						
+[[LinkedIn](https://www.linkedin.com/in/evantyy)]   [[GitHub](https://github.com/evantyy)]
+<br>
+
+&copy; Copyright. Evangeline Tan 2021.
