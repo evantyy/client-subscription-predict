@@ -4,6 +4,7 @@ With direct marketing campaigns of a Portuguese banking institution that were ba
 The classification goal predicts if the client will subscribe (Y/N) to a term deposit (var y).
 
 Data: [Bank Marketing Data Set](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing)
+Report: [Prediction Report](https://evantyy.github.io/client-subscription-predict/)
 
 ## Description
 
