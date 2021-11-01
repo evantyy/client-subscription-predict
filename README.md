@@ -3,7 +3,7 @@
 With direct marketing campaigns of a Portuguese banking institution that were based on phone calls,  more than one contact to the same client were often required so as to check if clients would subscribe to the bank's term deposit.
 The classification goal predicts if the client will subscribe (Y/N) to a term deposit (var y).
 
-Data: [Bank Marketing Data Set](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing)
+Data: [Bank Marketing Data Set](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing) <br>
 Report: [Prediction Report](https://evantyy.github.io/client-subscription-predict/)
 
 ## Description
